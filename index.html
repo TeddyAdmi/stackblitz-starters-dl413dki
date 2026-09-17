@@ -187,6 +187,10 @@
             display: block;
         }
 
+        .download-btn.alt {
+            background: #4b5563;
+        }
+
         .download-btn:hover {
             opacity: 0.9;
         }
@@ -227,13 +231,13 @@
         <div class="video-info">
             <img id="videoThumb" class="video-thumb" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80" alt="Thumbnail">
             <div class="video-details">
-                <h3 id="videoTitle">Видео из сети Bastyon (ID: 7f82bd3a...)</h3>
-                <p id="videoAuthor">Автор: Децентрализованный контент</p>
+                <h3 id="videoTitle">Загрузка данных...</h3>
+                <p id="videoAuthor">Автор: определяется...</p>
             </div>
         </div>
-        <div style="font-size: 13px; color: #9ca3af; margin-bottom: 4px;">Доступное действие:</div>
+        <div style="font-size: 13px; color: #9ca3af; margin-bottom: 4px;">Варианты действий:</div>
         <div id="linksList" class="download-options">
-            <a id="actionLink" href="https://bastyon.com/index?video=1&v=7f82bd3abe4702637528e7c8ecc9a10c8f4d6f863aec6a063026714072361750" target="_blank" class="download-btn">📥 Открыть плеер и скачать видео</a>
+            <a id="actionLink" href="#" target="_blank" class="download-btn">📥 Открыть плеер и скачать</a>
         </div>
     </div>
 
@@ -273,7 +277,7 @@ async function initBastyon() {
     }
 }
 
-function fetchVideo() {
+async function fetchVideo() {
     const rawUrl = document.getElementById("urlInput").value.trim();
     if (!rawUrl) {
         alert("Введите ссылку на видео");
@@ -288,17 +292,47 @@ function fetchVideo() {
         videoId = rawUrl; 
     }
 
-    // Динамически обновляем информацию об авторе и ID в карточке
-    document.getElementById("videoTitle").textContent = "Ролик Bastyon (ID: " + videoId.substring(0, 12) + "...)";
-    document.getElementById("videoAuthor").textContent = "Автор: Пользователь Bastyon";
-    
+    // Установка базовых значений на случай долгого ответа сети
+    document.getElementById("videoTitle").textContent = "Ролик Bastyon (ID: " + videoId.substring(0, 10) + "...)";
+    document.getElementById("videoAuthor").textContent = "Автор: Загрузка...";
+    document.getElementById("videoThumb").src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
+
     const actionLink = document.getElementById("actionLink");
     actionLink.href = `https://bastyon.com/index?video=1&v=${videoId}`;
+
+    // Запрос метаданных через ноду Pocketnet JSON-RPC
+    try {
+        const response = await fetch('https://1.pocketnet.app', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'getpost',
+                params: [videoId]
+            })
+        });
+        const data = await response.json();
+        
+        if (data && data.result) {
+            const post = data.result;
+            const title = post.caption || post.title || "Видео Bastyon";
+            const author = post.address || "Пользователь Bastyon";
+            const thumb = post.image || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
+
+            document.getElementById("videoTitle").textContent = title;
+            document.getElementById("videoAuthor").textContent = "Автор: " + author;
+            document.getElementById("videoThumb").src = thumb;
+        }
+    } catch (e) {
+        console.warn("Не удалось подтянуть метаданные по API, используется базовый режим", e);
+        document.getElementById("videoAuthor").textContent = "Автор: Сеть Bastyon";
+    }
 }
 
 window.onload = () => {
     initBastyon();
-    fetchVideo(); // Сразу активирует пример при старте
+    fetchVideo();
 };
 </script>
 
