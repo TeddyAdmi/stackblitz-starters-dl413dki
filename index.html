@@ -228,11 +228,11 @@
         <div class="video-info">
             <img id="videoThumb" class="video-thumb" src="" alt="Thumbnail">
             <div class="video-details">
-                <h3 id="videoTitle">Название видео</h3>
-                <p id="videoAuthor">Автор: @username</p>
+                <h3 id="videoTitle">Загрузка информации...</h3>
+                <p id="videoAuthor">Автор: ...</p>
             </div>
         </div>
-        <div style="font-size: 13px; color: #9ca3af; margin-bottom: 8px;">Доступные потоки:</div>
+        <div style="font-size: 13px; color: #9ca3af; margin-bottom: 8px;">Доступные файлы для скачивания:</div>
         <div id="linksList" class="download-options"></div>
     </div>
 
@@ -245,90 +245,107 @@
 let sdk = null;
 
 async function initBastyon() {
-    console.log("========== BASTYON START ==========");
     try {
-        if (typeof BastyonSdk === 'undefined') {
-            throw new Error("BastyonSdk не загружен");
-        }
+        if (typeof BastyonSdk !== 'undefined') {
+            sdk = new BastyonSdk();
+            await Promise.race([
+                sdk.init(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
+            ]);
+            sdk.emit("loaded");
 
-        sdk = new BastyonSdk();
-        
-        // Ограничиваем время ожидания ответа от ноды (таймаут 4 секунды)
-        const initPromise = sdk.init();
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 4000));
-        
-        await Promise.race([initPromise, timeoutPromise]);
-        console.log("BASTYON SDK INITIALIZED");
-        sdk.emit("loaded");
-
-        // Пытаемся получить аккаунт
-        try {
-            const account = await sdk.get.account();
+            const account = await sdk.get.account().catch(() => null);
             if (account && account.address) {
                 document.getElementById("profileAddress").textContent = account.address;
                 document.getElementById("profileName").textContent = "Игрок " + account.address.substring(0, 6);
             }
-        } catch (e) {
-            console.warn("Не удалось получить аккаунт:", e);
-        }
 
-        // Пытаемся получить баланс
-        try {
-            const balance = await sdk.get.balance();
+            const balance = await sdk.get.balance().catch(() => null);
             if (balance) {
                 const amount = Number(balance.actual ?? balance.total ?? 0);
                 document.getElementById("profileBalance").textContent = amount.toFixed(4) + " PKOIN";
             }
-        } catch (e) {
-            console.warn("Не удалось получить баланс:", e);
+            document.getElementById("status").textContent = "Bastyon подключён";
         }
-
-        document.getElementById("status").textContent = "Bastyon подключён";
-    } catch (error) {
-        console.warn("Работа в автономном режиме SDK:", error.message);
-        document.getElementById("status").textContent = "Автономный режим (ошибка сети ноды)";
+    } catch (e) {
+        document.getElementById("status").textContent = "Автономный режим";
     }
-    console.log("========== BASTYON READY ==========");
 }
 
-function fetchVideo() {
-    const url = document.getElementById("urlInput").value.trim();
-    if (!url) {
-        alert("Пожалуйста, введите ссылку на видео Bastyon");
+async function fetchVideo() {
+    const rawUrl = document.getElementById("urlInput").value.trim();
+    if (!rawUrl) {
+        alert("Введите ссылку на видео Bastyon");
         return;
     }
 
     const resultCard = document.getElementById("resultCard");
     resultCard.classList.remove("hidden");
 
-    // Выделяем ID видео из ссылки, если он есть
-    document.getElementById("videoTitle").textContent = "Видео по ссытке: " + url.substring(0, 30) + "...";
-    document.getElementById("videoAuthor").textContent = "@bastyon_user";
-    document.getElementById("videoThumb").src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
-
+    document.getElementById("videoTitle").textContent = "Поиск данных поста...";
+    document.getElementById("videoAuthor").textContent = "Автор: определяется...";
+    document.getElementById("videoThumb").src = "https://i.imgur.com/6VBx3io.png";
     const linksList = document.getElementById("linksList");
-    linksList.innerHTML = "";
+    linksList.innerHTML = "Загрузка потоков...";
 
-    const qualities = [
-        { name: "720p HD", link: "#" },
-        { name: "480p", link: "#" },
-        { name: "Audio (MP3)", link: "#" }
-    ];
+    let videoId = "";
+    try {
+        const urlObj = new URL(rawUrl);
+        videoId = urlObj.searchParams.get("v") || urlObj.searchParams.get("id") || urlObj.pathname.split("/").pop();
+    } catch (err) {
+        videoId = rawUrl; // если ввели просто ID
+    }
 
-    qualities.forEach(q => {
+    let postData = null;
+    
+    // Пытаемся получить данные через RPC ноды Bastyon, если SDK доступен
+    if (sdk && typeof sdk.rpc === "function" && videoId) {
+        try {
+            const res = await sdk.rpc("getpost", [videoId], { cachetime: 0 });
+            if (res) postData = res;
+        } catch (e) {
+            console.warn("RPC getpost не удался, пробуем альтернативный метод", e);
+        }
+    }
+
+    // Если данные получены из сети
+    if (postData) {
+        const title = postData.caption || postData.title || "Видео из Bastyon";
+        const author = postData.address || postData.user || "@unknown";
+        const img = postData.image || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
+        
+        document.getElementById("videoTitle").textContent = title;
+        document.getElementById("videoAuthor").textContent = "Автор: " + author;
+        document.getElementById("videoThumb").src = img;
+
+        linksList.innerHTML = "";
+        
+        // Генерация ссылки на скачивание (прямой поток или IPFS-видео)
+        const videoFileUrl = postData.video || postData.file || rawUrl;
+        
         const a = document.createElement("a");
-        a.href = q.link;
+        a.href = videoFileUrl;
         a.className = "download-btn";
-        a.innerHTML = `📥 ${q.name}`;
-        a.onclick = (e) => {
-            e.preventDefault();
-            alert(`Имитация загрузки файла (${q.name}). Прямая загрузка видео из децентрализованных узлов требует RPC-запроса к трансляции.`);
-        };
+        a.target = "_blank";
+        a.innerHTML = `📥 Скачать видео (MP4)`;
         linksList.appendChild(a);
-    });
+
+    } else {
+        // Резервный режим, если RPC недоступен или ссылка прямая
+        document.getElementById("videoTitle").textContent = "Видео по ссылке: " + videoId;
+        document.getElementById("videoAuthor").textContent = "Автор: Bastyon Creator";
+        document.getElementById("videoThumb").src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
+
+        linksList.innerHTML = "";
+        const a = document.createElement("a");
+        a.href = rawUrl;
+        a.className = "download-btn";
+        a.target = "_blank";
+        a.innerHTML = `📥 Открыть источник / Скачать`;
+        linksList.appendChild(a);
+    }
 }
 
-// Запускаем инициализацию
 initBastyon();
 </script>
 
