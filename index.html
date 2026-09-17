@@ -145,16 +145,16 @@
         }
 
         .video-thumb {
-            width: 100px;
-            height: 56px;
+            width: 110px;
+            height: 62px;
             object-fit: cover;
             border-radius: 8px;
             background: #374151;
         }
 
         .video-details h3 {
-            font-size: 15px;
-            margin: 0 0 4px 0;
+            font-size: 14px;
+            margin: 0 0 6px 0;
             overflow: hidden;
             text-overflow: ellipsis;
             display: -webkit-box;
@@ -187,10 +187,6 @@
             display: block;
         }
 
-        .download-btn.alt {
-            background: #4b5563;
-        }
-
         .download-btn:hover {
             opacity: 0.9;
         }
@@ -218,25 +214,27 @@
     </div>
 
     <div class="title">Bastyon DL</div>
-    <div class="subtitle">Скачивание видео из децентрализованной сети</div>
+    <div class="subtitle">Скачивание видео из сети</div>
 
     <!-- Поле ввода ссылки -->
     <div class="input-group">
-        <input type="text" id="urlInput" value="https://bastyon.com/index?video=1&v=7f82bd3abe4702637528e7c8ecc9a10c8f4d6f863aec6a063026714072361750" placeholder="https://bastyon.com/index?v=...">
+        <input type="text" id="urlInput" value="https://bastyon.com/index?video=1&v=7f82bd3abe4702637528e7c8ecc9a10c8f4d6f863aec6a063026714072361750" placeholder="Вставьте ссылку на видео...">
         <button class="btn" onclick="fetchVideo()">Найти</button>
     </div>
 
     <!-- Блок результата -->
-    <div id="resultCard" class="result hidden">
+    <div id="resultCard" class="result">
         <div class="video-info">
             <img id="videoThumb" class="video-thumb" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80" alt="Thumbnail">
             <div class="video-details">
-                <h3 id="videoTitle">Видео Bastyon</h3>
-                <p id="videoAuthor">Децентрализованный контент</p>
+                <h3 id="videoTitle">Видео из сети Bastyon (ID: 7f82bd3a...)</h3>
+                <p id="videoAuthor">Автор: Децентрализованный контент</p>
             </div>
         </div>
-        <div style="font-size: 13px; color: #9ca3af; margin-bottom: 4px;">Варианты загрузки и просмотра:</div>
-        <div id="linksList" class="download-options"></div>
+        <div style="font-size: 13px; color: #9ca3af; margin-bottom: 4px;">Доступное действие:</div>
+        <div id="linksList" class="download-options">
+            <a id="actionLink" href="https://bastyon.com/index?video=1&v=7f82bd3abe4702637528e7c8ecc9a10c8f4d6f863aec6a063026714072361750" target="_blank" class="download-btn">📥 Открыть плеер и скачать видео</a>
+        </div>
     </div>
 
     <!-- Статус подключения SDK -->
@@ -278,12 +276,9 @@ async function initBastyon() {
 function fetchVideo() {
     const rawUrl = document.getElementById("urlInput").value.trim();
     if (!rawUrl) {
-        alert("Введите ссылку на видео Bastyon");
+        alert("Введите ссылку на видео");
         return;
     }
-
-    const resultCard = document.getElementById("resultCard");
-    resultCard.classList.remove("hidden");
 
     let videoId = "";
     try {
@@ -293,33 +288,17 @@ function fetchVideo() {
         videoId = rawUrl; 
     }
 
-    document.getElementById("videoTitle").textContent = "ID: " + videoId.substring(0, 16) + "...";
-    document.getElementById("videoAuthor").textContent = "Сеть Bastyon / IPFS";
-
-    const linksList = document.getElementById("linksList");
-    linksList.innerHTML = "";
-
-    // 1. Прямая ссылка на плеер для скачивания/сохранения
-    const btnDownload = document.createElement("a");
-    btnDownload.href = `https://bastyon.com/index?video=1&v=${videoId}`;
-    btnDownload.className = "download-btn";
-    btnDownload.target = "_blank";
-    btnDownload.innerHTML = `📥 Открыть плеер и скачать видео`;
-    linksList.appendChild(btnDownload);
-
-    // 2. Альтернативный шлюз через pocketnet.app
-    const btnGateway = document.createElement("a");
-    btnGateway.href = `https://pocketnet.app/index?v=${videoId}`;
-    btnGateway.className = "download-btn alt";
-    btnGateway.target = "_blank";
-    btnGateway.innerHTML = `🌐 Открыть на шлюзе Pocketnet`;
-    linksList.appendChild(btnGateway);
+    // Динамически обновляем информацию об авторе и ID в карточке
+    document.getElementById("videoTitle").textContent = "Ролик Bastyon (ID: " + videoId.substring(0, 12) + "...)";
+    document.getElementById("videoAuthor").textContent = "Автор: Пользователь Bastyon";
+    
+    const actionLink = document.getElementById("actionLink");
+    actionLink.href = `https://bastyon.com/index?video=1&v=${videoId}`;
 }
 
-// Автоматический запуск примера при загрузке страницы
 window.onload = () => {
     initBastyon();
-    fetchVideo();
+    fetchVideo(); // Сразу активирует пример при старте
 };
 </script>
 
