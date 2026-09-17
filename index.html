@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bastyon Video Downloader</title>
     
+    <!-- Подключение SDK Bastyon -->
     <script src="https://bastyon.com/js/lib/apps/sdk.js"></script>
 
     <style>
@@ -44,7 +45,7 @@
             font-weight: bold;
         }
         .btn:hover { background: #ea580c; }
-        .result { margin-top: 20px; padding: 18px; border-radius: 18px; background: #1f2937; }
+        .result { margin-top: 20px; padding: 18px; border-radius: 18px; background: #1f2937; display: none; }
         .video-info { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; }
         .video-thumb { width: 110px; height: 62px; object-fit: cover; border-radius: 8px; background: #374151; }
         .video-details h3 {
@@ -53,12 +54,14 @@
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
         }
         .video-details p { font-size: 12px; color: #9ca3af; margin: 0; }
-        .download-btn {
+        .actions { display: flex; flex-direction: column; gap: 8px; }
+        .action-btn {
             background: #3b82f6; color: white; text-decoration: none;
             padding: 10px 14px; border-radius: 10px; font-size: 14px;
-            font-weight: 500; text-align: center; display: block;
+            font-weight: 500; text-align: center; display: block; border: none; cursor: pointer;
         }
-        .download-btn:hover { opacity: 0.9; }
+        .action-btn:hover { opacity: 0.9; }
+        .download-btn { background: #10b981; }
         .status { margin-top: 20px; text-align: center; color: #6ee7b7; font-size: 13px; }
     </style>
 </head>
@@ -69,20 +72,21 @@
     <div class="subtitle">Скачивание видео из сети</div>
 
     <div class="input-group">
-        <input type="text" id="urlInput" value="7f82bd3abe4702637528e7c8ecc9a10c8f4d6f863aec6a063026714072361750" placeholder="ID или ссылка на видео...">
+        <input type="text" id="urlInput" placeholder="Введите ID или ссылку на видео...">
         <button class="btn" onclick="fetchVideo()">Найти</button>
     </div>
 
     <div id="resultCard" class="result">
         <div class="video-info">
-            <img id="videoThumb" class="video-thumb" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80" alt="Thumbnail">
+            <img id="videoThumb" class="video-thumb" src="" alt="Thumbnail">
             <div class="video-details">
-                <h3 id="videoTitle">Введите ID видео</h3>
+                <h3 id="videoTitle">Загрузка...</h3>
                 <p id="videoAuthor">Автор: —</p>
             </div>
         </div>
-        <div id="linksList">
-            <a id="actionLink" href="#" target="_blank" class="download-btn">📥 Открыть плеер</a>
+        <div class="actions">
+            <a id="playerLink" href="#" target="_blank" class="action-btn">📥 Открыть в плеере Bastyon</a>
+            <button id="downloadBtn" class="action-btn download-btn" style="display:none;" onclick="downloadCurrentVideo()">💾 Скачать видеофайл</button>
         </div>
     </div>
 
@@ -91,7 +95,9 @@
 
 <script>
 let sdk = null;
+let currentVideoUrl = null;
 
+// Инициализация Bastyon SDK
 async function initBastyon() {
     try {
         if (typeof BastyonSdk !== 'undefined') {
@@ -105,28 +111,36 @@ async function initBastyon() {
     }
 }
 
-async function fetchVideo() {
-    const rawInput = document.getElementById("urlInput").value.trim();
-    if (!rawInput) return;
-
-    // Извлекаем ID видео из ссылки или берем строку целиком, если это хэш
-    let videoId = rawInput;
+// Извлечение ID видео из ссылки или строки
+function extractVideoId(input) {
+    input = input.trim();
     try {
-        if (rawInput.includes('http')) {
-            const urlObj = new URL(rawInput);
-            videoId = urlObj.searchParams.get("v") || urlObj.searchParams.get("id") || urlObj.pathname.split("/").pop();
+        if (input.includes('http')) {
+            const urlObj = new URL(input);
+            return urlObj.searchParams.get("v") || urlObj.searchParams.get("id") || urlObj.pathname.split("/").pop();
         }
     } catch (e) {}
+    return input;
+}
 
-    document.getElementById("videoTitle").textContent = "Загрузка данных с ноды...";
+// Запрос данных видео через RPC ноду Pocketnet
+async function fetchVideo() {
+    const rawInput = document.getElementById("urlInput").value;
+    const videoId = extractVideoId(rawInput);
+    if (!videoId) return;
+
+    const resultCard = document.getElementById("resultCard");
+    resultCard.style.display = "block";
+    
+    document.getElementById("videoTitle").textContent = "Загрузка метаданных...";
     document.getElementById("videoAuthor").textContent = "Автор: поиск...";
-
-    const actionLink = document.getElementById("actionLink");
-    actionLink.href = `https://bastyon.com/index?video=1&v=${videoId}`;
+    document.getElementById("downloadBtn").style.display = "none";
+    
+    const playerLink = document.getElementById("playerLink");
+    playerLink.href = `https://bastyon.com/index?video=1&v=${videoId}`;
 
     try {
-        // Запрос к RPC-ноде Pocketnet для получения информации о посте/видео
-        const response = window.fetch ? await fetch('https://1.pocketnet.app', {
+        const response = await fetch('https://1.pocketnet.app', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -135,14 +149,13 @@ async function fetchVideo() {
                 method: 'getpost',
                 params: [videoId]
             })
-        }) : null;
+        });
 
-        if (response && response.ok) {
+        if (response.ok) {
             const data = await response.json();
             const post = data.result;
 
             if (post) {
-                // Извлекаем название, автора и превью
                 const title = post.caption || post.title || "Видео без названия";
                 const author = post.address || "Неизвестный автор";
                 let thumb = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
@@ -153,24 +166,51 @@ async function fetchVideo() {
                     thumb = post.image;
                 }
 
+                // Пытаемся обнаружить прямую ссылку на видеофайл (если передана в постах)
+                if (post.settings && post.settings.v && post.settings.v.url) {
+                    currentVideoUrl = post.settings.v.url;
+                    document.getElementById("downloadBtn").style.display = "block";
+                }
+
                 document.getElementById("videoTitle").textContent = title;
                 document.getElementById("videoAuthor").textContent = "Автор: " + author;
                 document.getElementById("videoThumb").src = thumb;
                 return;
             }
         }
-        throw new Error("Пустой ответ ноды");
+        throw new Error("Пост не найден");
     } catch (err) {
-        console.warn("Ошибка запроса метаданных:", err);
-        document.getElementById("videoTitle").textContent = "Видео ID: " + videoId.substring(0, 12) + "...";
+        console.warn("Ошибка запроса:", err);
+        document.getElementById("videoTitle").textContent = "Видео (ID: " + videoId.substring(0, 10) + "...)";
         document.getElementById("videoAuthor").textContent = "Автор: Сеть Bastyon";
     }
 }
 
-window.onload = () => {
-    initBastyon();
-    fetchVideo();
-};
+// Функция безопасного скачивания файла через Blob
+async function downloadCurrentVideo() {
+    if (!currentVideoUrl) return;
+    try {
+        document.getElementById("downloadBtn").textContent = "Загрузка файла...";
+        const response = await fetch(currentVideoUrl);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = 'bastyon-video.mp4';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        window.URL.revokeObjectURL(blobUrl);
+        document.getElementById("downloadBtn").textContent = "💾 Скачать видеофайл";
+    } catch (e) {
+        window.open(currentVideoUrl, '_blank');
+        document.getElementById("downloadBtn").textContent = "💾 Скачать видеофайл";
+    }
+}
+
+window.onload = initBastyon;
 </script>
 
 </body>
