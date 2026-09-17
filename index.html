@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bastyon Video Downloader</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fa-solid fa-download"></i> Bastyon Video Downloader</h1>
+            <p>Вставьте ссылку на видео или пост в Bastyon для получения файла</p>
+        </header>
+
+        <!-- Блок авторизации -->
+        <div class="card auth-card">
+            <div id="auth-status">
+                <i class="fa-solid fa-user-slash"></i> <span>Сеть Bastyon: Гость</span>
+            </div>
+            <button id="login-btn" class="btn secondary">Войти</button>
+        </div>
+
+        <!-- Поле ввода ссылки -->
+        <div class="card input-card">
+            <div class="input-group">
+                <input type="text" id="url-input" placeholder="https://bastyon.com/index?v=...">
+                <button id="fetch-btn" class="btn primary">Найти видео</button>
+            </div>
+        </div>
+
+        <!-- Результат поиска и ссылки на скачивание -->
+        <div id="result-container" class="card result-card hidden">
+            <div class="video-info">
+                <img id="video-thumb" src="" alt="Thumbnail">
+                <div class="video-details">
+                    <h3 id="video-title">Название видео</h3>
+                    <p id="video-author">Автор: <span>@username</span></p>
+                </div>
+            </div>
+            <div class="download-options">
+                <h4>Доступные варианты:</h4>
+                <div id="links-list" class="links-grid"></div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

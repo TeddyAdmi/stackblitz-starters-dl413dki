@@ -1,0 +1,11 @@
+{
+  "name": "Bastyon Video Downloader",
+  "short_name": "BastyonDL",
+  "version": "1.0.0",
+  "description": "Мини-приложение для удобного скачивания видео из Bastyon в разных разрешениях",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#f97316",
+  "permissions": ["wallet", "profile"]
+}
