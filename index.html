@@ -87,7 +87,7 @@
         </div>
         <div class="actions">
             <a id="playerLink" href="#" target="_blank" class="action-btn">📥 Открыть в плеере Bastyon</a>
-            <button id="downloadBtn" class="action-btn download-btn" style="display:none;" onclick="downloadVideoViaBlob()">💾 Скачать видеофайл</button>
+            <button id="downloadBtn" class="action-btn download-btn" style="display:none;" onclick="validateAndDownloadVideo()">💾 Скачать видеофайл</button>
         </div>
     </div>
 
@@ -189,22 +189,54 @@ async function fetchVideo() {
     }
 }
 
-// Функция скачивания видео через Blob с отслеживанием прогресса
-async function downloadVideoViaBlob() {
+// Шаг 1: Проверка файла на существование (защита от 404) перед скачиванием
+async function validateAndDownloadVideo() {
     if (!currentVideoUrl) return;
 
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    try {
+        downloadBtn.textContent = "🔍 Проверка файла...";
+        downloadBtn.disabled = true;
+
+        // Делаем легкий HEAD-запрос для проверки доступности файла на ноде
+        const checkResponse = await fetch(currentVideoUrl, { method: 'HEAD' });
+
+        if (checkResponse.status === 404) {
+            alert("⚠️ Файл видео не найден на ноде (ошибка 404). Возможно, он был удален или перемещен.");
+            downloadBtn.textContent = "💾 Скачать видеофайл";
+            downloadBtn.disabled = false;
+            return;
+        }
+
+        // Если файл существует, запускаем процесс скачивания через Blob
+        await downloadVideoViaBlob();
+
+    } catch (err) {
+        console.warn("HEAD-запрос не удался, пробуем скачать напрямую:", err);
+        // Если HEAD заблокирован CORS, сразу переходим к Blob-загрузке
+        await downloadVideoViaBlob();
+    }
+}
+
+// Шаг 2: Функция скачивания видео через Blob с отслеживанием прогресса
+async function downloadVideoViaBlob() {
     const downloadBtn = document.getElementById("downloadBtn");
     downloadAbortController = new AbortController();
 
     try {
         downloadBtn.textContent = "⏳ Подготовка к загрузке...";
-        downloadBtn.disabled = true;
 
         const response = await fetch(currentVideoUrl, {
             signal: downloadAbortController.signal
         });
 
-        if (!response.ok) throw new Error(`Ошибка загрузки: ${response.status}`);
+        if (response.status === 404) {
+            throw new Error("Video file not found (404)");
+        }
+        if (!response.ok) {
+            throw new Error(`Ошибка загрузки: ${response.status}`);
+        }
 
         const contentLength = response.headers.get('content-length');
         const total = contentLength ? parseInt(contentLength, 10) : 0;
@@ -256,7 +288,8 @@ async function downloadVideoViaBlob() {
         if (err.name === 'AbortError') {
             console.log("Скачивание отменено пользователем.");
         } else {
-            console.warn("Blob недоступен, открываем прямую ссылку в новой вкладке:", err);
+            console.warn("Ошибка Blob-загрузки, открываем прямую ссылку в новой вкладке:", err);
+            alert("Не удалось скачать через Blob из-за ограничений сети/CORS. Видео откроется в новой вкладке.");
             window.open(currentVideoUrl, '_blank');
         }
         downloadBtn.textContent = "💾 Скачать видеофайл";
