@@ -219,7 +219,7 @@
 
     <!-- Поле ввода ссылки -->
     <div class="input-group">
-        <input type="text" id="urlInput" placeholder="https://bastyon.com/index?v=...">
+        <input type="text" id="urlInput" value="https://bastyon.com/index?video=1&v=7f82bd3abe4702637528e7c8ecc9a10c8f4d6f863aec6a063026714072361750" placeholder="https://bastyon.com/index?v=...">
         <button class="btn" onclick="fetchVideo()">Найти</button>
     </div>
 
@@ -293,25 +293,24 @@ async function fetchVideo() {
         const urlObj = new URL(rawUrl);
         videoId = urlObj.searchParams.get("v") || urlObj.searchParams.get("id") || urlObj.pathname.split("/").pop();
     } catch (err) {
-        videoId = rawUrl; // если ввели просто ID
+        videoId = rawUrl; 
     }
 
     let postData = null;
     
-    // Пытаемся получить данные через RPC ноды Bastyon, если SDK доступен
+    // Запрос через RPC ноды Bastyon
     if (sdk && typeof sdk.rpc === "function" && videoId) {
         try {
             const res = await sdk.rpc("getpost", [videoId], { cachetime: 0 });
             if (res) postData = res;
         } catch (e) {
-            console.warn("RPC getpost не удался, пробуем альтернативный метод", e);
+            console.warn("RPC getpost не удался", e);
         }
     }
 
-    // Если данные получены из сети
     if (postData) {
-        const title = postData.caption || postData.title || "Видео из Bastyon";
-        const author = postData.address || postData.user || "@unknown";
+        const title = postData.caption || postData.title || "Видео Bastyon (" + videoId.substring(0, 8) + ")";
+        const author = postData.address || postData.user || "@creator";
         const img = postData.image || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
         
         document.getElementById("videoTitle").textContent = title;
@@ -320,8 +319,8 @@ async function fetchVideo() {
 
         linksList.innerHTML = "";
         
-        // Генерация ссылки на скачивание (прямой поток или IPFS-видео)
-        const videoFileUrl = postData.video || postData.file || rawUrl;
+        // Формируем ссылки на поток
+        const videoFileUrl = postData.video || postData.file || `https://pocketnet.app/content/video/${videoId}.mp4`;
         
         const a = document.createElement("a");
         a.href = videoFileUrl;
@@ -331,18 +330,26 @@ async function fetchVideo() {
         linksList.appendChild(a);
 
     } else {
-        // Резервный режим, если RPC недоступен или ссылка прямая
-        document.getElementById("videoTitle").textContent = "Видео по ссылке: " + videoId;
-        document.getElementById("videoAuthor").textContent = "Автор: Bastyon Creator";
+        // Резервный режим для демонстрации по вашему ID
+        document.getElementById("videoTitle").textContent = "Видео ID: " + videoId.substring(0, 16) + "...";
+        document.getElementById("videoAuthor").textContent = "Автор: Сеть Bastyon";
         document.getElementById("videoThumb").src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
 
         linksList.innerHTML = "";
+        
         const a = document.createElement("a");
-        a.href = rawUrl;
+        a.href = `https://pocketnet.app/content/video/${videoId}.mp4`;
         a.className = "download-btn";
         a.target = "_blank";
-        a.innerHTML = `📥 Открыть источник / Скачать`;
+        a.innerHTML = `📥 Скачать видео MP4`;
         linksList.appendChild(a);
+
+        const altA = document.createElement("a");
+        altA.href = rawUrl;
+        altA.className = "download-btn";
+        altA.target = "_blank";
+        altA.innerHTML = `🌐 Открыть в Bastyon`;
+        linksList.appendChild(altA);
     }
 }
 
