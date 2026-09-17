@@ -4,47 +4,320 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bastyon Video Downloader</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://bastyon.com/js/lib/apps/sdk.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: #111827;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: #1f2937;
+            padding: 15px;
+            border-radius: 18px;
+            margin-bottom: 20px;
+        }
+
+        .avatar {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #374151;
+        }
+
+        .profile-info {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 18px;
+            font-weight: bold;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .profile-address {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #9ca3af;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .balance {
+            margin-left: auto;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #9ca3af;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 14px;
+            padding: 14px 16px;
+            color: white;
+            font-size: 15px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #f97316;
+        }
+
+        .btn {
+            border: 0;
+            border-radius: 14px;
+            padding: 0 20px;
+            background: #f97316;
+            color: white;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #ea580c;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 18px;
+            border-radius: 18px;
+            background: #1f2937;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .video-info {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+
+        .video-thumb {
+            width: 100px;
+            height: 56px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #374151;
+        }
+
+        .video-details h3 {
+            font-size: 15px;
+            margin: 0 0 4px 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .video-details p {
+            font-size: 12px;
+            color: #9ca3af;
+            margin: 0;
+        }
+
+        .download-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .download-btn {
+            background: #3b82f6;
+            color: white;
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .download-btn:hover {
+            opacity: 0.9;
+        }
+
+        .status {
+            margin-top: 20px;
+            text-align: center;
+            color: #6ee7b7;
+            font-size: 13px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1><i class="fa-solid fa-download"></i> Bastyon Video Downloader</h1>
-            <p>Вставьте ссылку на видео или пост в Bastyon для получения файла</p>
-        </header>
 
-        <!-- Блок авторизации -->
-        <div class="card auth-card">
-            <div id="auth-status">
-                <i class="fa-solid fa-user-slash"></i> <span>Сеть Bastyon: Гость</span>
-            </div>
-            <button id="login-btn" class="btn secondary">Войти</button>
-        </div>
+<div class="app">
 
-        <!-- Поле ввода ссылки -->
-        <div class="card input-card">
-            <div class="input-group">
-                <input type="text" id="url-input" placeholder="https://bastyon.com/index?v=...">
-                <button id="fetch-btn" class="btn primary">Найти видео</button>
-            </div>
+    <!-- Профиль пользователя -->
+    <div class="profile">
+        <img id="avatar" class="avatar" src="https://i.imgur.com/6VBx3io.png" alt="Avatar">
+        <div class="profile-info">
+            <div id="profileName" class="profile-name">Подключение...</div>
+            <div id="profileAddress" class="profile-address">...</div>
         </div>
-
-        <!-- Результат поиска и ссылки на скачивание -->
-        <div id="result-container" class="card result-card hidden">
-            <div class="video-info">
-                <img id="video-thumb" src="" alt="Thumbnail">
-                <div class="video-details">
-                    <h3 id="video-title">Название видео</h3>
-                    <p id="video-author">Автор: <span>@username</span></p>
-                </div>
-            </div>
-            <div class="download-options">
-                <h4>Доступные варианты:</h4>
-                <div id="links-list" class="links-grid"></div>
-            </div>
-        </div>
+        <div id="profileBalance" class="balance">0 PKOIN</div>
     </div>
-    <script src="script.js"></script>
+
+    <div class="title">Bastyon DL</div>
+    <div class="subtitle">Скачивание видео из децентрализованной сети</div>
+
+    <!-- Поле ввода ссылки -->
+    <div class="input-group">
+        <input type="text" id="urlInput" placeholder="https://bastyon.com/index?v=...">
+        <button class="btn" onclick="fetchVideo()">Найти</button>
+    </div>
+
+    <!-- Блок результата -->
+    <div id="resultCard" class="result hidden">
+        <div class="video-info">
+            <img id="videoThumb" class="video-thumb" src="" alt="Thumbnail">
+            <div class="video-details">
+                <h3 id="videoTitle">Название видео</h3>
+                <p id="videoAuthor">Автор: @username</p>
+            </div>
+        </div>
+        <div style="font-size: 13px; color: #9ca3af; margin-bottom: 8px;">Доступные потоки:</div>
+        <div id="linksList" class="download-options"></div>
+    </div>
+
+    <!-- Статус подключения SDK -->
+    <div id="status" class="status">Подключение к Bastyon...</div>
+
+</div>
+
+<script>
+let sdk = null;
+let account = null;
+let balance = null;
+
+async function initBastyon() {
+    console.log("========== BASTYON START ==========");
+    try {
+        sdk = new BastyonSdk();
+        await sdk.init();
+        console.log("BASTYON SDK INITIALIZED");
+        sdk.emit("loaded");
+
+        account = await sdk.get.account();
+        console.log("BASTYON ACCOUNT:", account);
+
+        if (account && account.address) {
+            document.getElementById("profileAddress").textContent = account.address;
+            document.getElementById("profileName").textContent = "Игрок " + account.address.substring(0, 6);
+        }
+
+        balance = await sdk.get.balance();
+        console.log("BASTYON BALANCE:", balance);
+
+        if (balance) {
+            const amount = Number(balance.actual ?? balance.total ?? 0);
+            document.getElementById("profileBalance").textContent = amount.toFixed(4) + " PKOIN";
+        }
+
+        document.getElementById("status").textContent = "Bastyon подключён";
+        console.log("========== BASTYON READY ==========");
+    } catch (error) {
+        console.error("BASTYON ERROR:", error);
+        document.getElementById("status").textContent = "Ошибка подключения Bastyon";
+    }
+}
+
+function fetchVideo() {
+    const url = document.getElementById("urlInput").value.trim();
+    if (!url) {
+        alert("Пожалуйста, введите ссылку на видео Bastyon");
+        return;
+    }
+
+    const resultCard = document.getElementById("resultCard");
+    resultCard.classList.remove("hidden");
+
+    // Демонстрационное заполнение данных (сюда можно подключить парсер/API ноды)
+    document.getElementById("videoTitle").textContent = "Видео из Bastyon по ссылке";
+    document.getElementById("videoAuthor").textContent = "@bastyon_creator";
+    document.getElementById("videoThumb").src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
+
+    const linksList = document.getElementById("linksList");
+    linksList.innerHTML = "";
+
+    const qualities = [
+        { name: "720p HD", link: "#" },
+        { name: "480p", link: "#" },
+        { name: "360p", link: "#" },
+        { name: "Audio (MP3)", link: "#" }
+    ];
+
+    qualities.forEach(q => {
+        const a = document.createElement("a");
+        a.href = q.link;
+        a.className = "download-btn";
+        a.innerHTML = `📥 ${q.name}`;
+        a.onclick = (e) => {
+            e.preventDefault();
+            alert(`Загрузка потока: ${q.name}`);
+        };
+        linksList.appendChild(a);
+    });
+}
+
+initBastyon();
+</script>
+
 </body>
 </html>
