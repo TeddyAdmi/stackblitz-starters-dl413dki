@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bastyon Video Downloader</title>
     
-    <!-- Подключение SDK Bastyon -->
+    <!-- Подключение официального SDK Bastyon -->
     <script src="https://bastyon.com/js/lib/apps/sdk.js"></script>
 
     <style>
@@ -57,11 +57,12 @@
         .actions { display: flex; flex-direction: column; gap: 8px; }
         .action-btn {
             background: #3b82f6; color: white; text-decoration: none;
-            padding: 10px 14px; border-radius: 10px; font-size: 14px;
+            padding: 12px 14px; border-radius: 10px; font-size: 14px;
             font-weight: 500; text-align: center; display: block; border: none; cursor: pointer;
         }
         .action-btn:hover { opacity: 0.9; }
         .download-btn { background: #10b981; }
+        .download-btn:disabled { background: #047857; opacity: 0.7; cursor: not-allowed; }
         .status { margin-top: 20px; text-align: center; color: #6ee7b7; font-size: 13px; }
     </style>
 </head>
@@ -86,7 +87,7 @@
         </div>
         <div class="actions">
             <a id="playerLink" href="#" target="_blank" class="action-btn">📥 Открыть в плеере Bastyon</a>
-            <button id="downloadBtn" class="action-btn download-btn" style="display:none;" onclick="downloadCurrentVideo()">💾 Скачать видеофайл</button>
+            <button id="downloadBtn" class="action-btn download-btn" style="display:none;" onclick="downloadVideoViaBlob()">💾 Скачать видеофайл</button>
         </div>
     </div>
 
@@ -96,6 +97,8 @@
 <script>
 let sdk = null;
 let currentVideoUrl = null;
+let currentVideoTitle = "bastyon-video";
+let downloadAbortController = null;
 
 // Инициализация Bastyon SDK
 async function initBastyon() {
@@ -156,7 +159,7 @@ async function fetchVideo() {
             const post = data.result;
 
             if (post) {
-                const title = post.caption || post.title || "Видео без названия";
+                currentVideoTitle = post.caption || post.title || "bastyon-video";
                 const author = post.address || "Неизвестный автор";
                 let thumb = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
                 
@@ -166,13 +169,13 @@ async function fetchVideo() {
                     thumb = post.image;
                 }
 
-                // Пытаемся обнаружить прямую ссылку на видеофайл (если передана в постах)
+                // Проверяем наличие прямой ссылки на видеофайл в посте
                 if (post.settings && post.settings.v && post.settings.v.url) {
                     currentVideoUrl = post.settings.v.url;
                     document.getElementById("downloadBtn").style.display = "block";
                 }
 
-                document.getElementById("videoTitle").textContent = title;
+                document.getElementById("videoTitle").textContent = currentVideoTitle;
                 document.getElementById("videoAuthor").textContent = "Автор: " + author;
                 document.getElementById("videoThumb").src = thumb;
                 return;
@@ -180,33 +183,84 @@ async function fetchVideo() {
         }
         throw new Error("Пост не найден");
     } catch (err) {
-        console.warn("Ошибка запроса:", err);
+        console.warn("Ошибка запроса метаданных:", err);
         document.getElementById("videoTitle").textContent = "Видео (ID: " + videoId.substring(0, 10) + "...)";
         document.getElementById("videoAuthor").textContent = "Автор: Сеть Bastyon";
     }
 }
 
-// Функция безопасного скачивания файла через Blob
-async function downloadCurrentVideo() {
+// Функция скачивания видео через Blob с отслеживанием прогресса
+async function downloadVideoViaBlob() {
     if (!currentVideoUrl) return;
+
+    const downloadBtn = document.getElementById("downloadBtn");
+    downloadAbortController = new AbortController();
+
     try {
-        document.getElementById("downloadBtn").textContent = "Загрузка файла...";
-        const response = await fetch(currentVideoUrl);
-        const blob = await response.blob();
+        downloadBtn.textContent = "⏳ Подготовка к загрузке...";
+        downloadBtn.disabled = true;
+
+        const response = await fetch(currentVideoUrl, {
+            signal: downloadAbortController.signal
+        });
+
+        if (!response.ok) throw new Error(`Ошибка загрузки: ${response.status}`);
+
+        const contentLength = response.headers.get('content-length');
+        const total = contentLength ? parseInt(contentLength, 10) : 0;
+        let loaded = 0;
+
+        const reader = response.body.getReader();
+        const chunks = [];
+
+        // Чтение потока по частям для отображения процентов
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            chunks.push(value);
+            loaded += value.length;
+
+            if (total > 0) {
+                const percent = Math.round((loaded / total) * 100);
+                downloadBtn.textContent = `📥 Скачивание: ${percent}%`;
+            } else {
+                downloadBtn.textContent = `📥 Скачано: ${(loaded / (1024 * 1024)).toFixed(1)} МБ`;
+            }
+        }
+
+        downloadBtn.textContent = "💾 Сохранение файла...";
+
+        const blob = new Blob(chunks, { type: 'video/mp4' });
         const blobUrl = window.URL.createObjectURL(blob);
-        
+
+        // Форматируем безопасное имя файла из заголовка
+        const safeName = currentVideoTitle.replace(/[^a-zA-Zа-яА-Я0-9-_]/g, '_').substring(0, 50);
+
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = 'bastyon-video.mp4';
+        link.download = `${safeName || 'video'}.mp4`;
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
         
+        document.body.removeChild(link);
         window.URL.revokeObjectURL(blobUrl);
-        document.getElementById("downloadBtn").textContent = "💾 Скачать видеофайл";
-    } catch (e) {
-        window.open(currentVideoUrl, '_blank');
-        document.getElementById("downloadBtn").textContent = "💾 Скачать видеофайл";
+
+        downloadBtn.textContent = "✅ Готово!";
+        setTimeout(() => {
+            downloadBtn.textContent = "💾 Скачать видеофайл";
+            downloadBtn.disabled = false;
+        }, 3000);
+
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            console.log("Скачивание отменено пользователем.");
+        } else {
+            console.warn("Blob недоступен, открываем прямую ссылку в новой вкладке:", err);
+            window.open(currentVideoUrl, '_blank');
+        }
+        downloadBtn.textContent = "💾 Скачать видеофайл";
+        downloadBtn.disabled = false;
     }
 }
 
