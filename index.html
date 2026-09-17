@@ -286,70 +286,78 @@ async function fetchVideo() {
     document.getElementById("videoAuthor").textContent = "Автор: определяется...";
     document.getElementById("videoThumb").src = "https://i.imgur.com/6VBx3io.png";
     const linksList = document.getElementById("linksList");
-    linksList.innerHTML = "Загрузка потоков...";
+    linksList.innerHTML = "Получение потоков...";
 
     let videoId = "";
     try {
-        const urlObj = new URL(rawUrl);
+        const urlObj = new URL(rawUrl.startsWith('http') ? rawUrl : 'https://bastyon.com/' + rawUrl);
         videoId = urlObj.searchParams.get("v") || urlObj.searchParams.get("id") || urlObj.pathname.split("/").pop();
     } catch (err) {
         videoId = rawUrl; 
     }
 
     let postData = null;
-    
-    // Запрос через RPC ноды Bastyon
-    if (sdk && typeof sdk.rpc === "function" && videoId) {
-        try {
-            const res = await sdk.rpc("getpost", [videoId], { cachetime: 0 });
-            if (res) postData = res;
-        } catch (e) {
-            console.warn("RPC getpost не удался", e);
+
+    // Запрос через публичный HTTP JSON-RPC ноды
+    try {
+        const rpcRes = await fetch('https://1.pocketnet.app', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'getpost',
+                params: [videoId]
+            })
+        });
+        const json = await rpcRes.json();
+        if (json && json.result) {
+            postData = json.result;
         }
+    } catch (e) {
+        console.warn("HTTP RPC запрос не удался:", e);
     }
 
-    if (postData) {
-        const title = postData.caption || postData.title || "Видео Bastyon (" + videoId.substring(0, 8) + ")";
-        const author = postData.address || postData.user || "@creator";
+    linksList.innerHTML = "";
+
+    if (postData && postData.txid) {
+        const title = postData.caption || postData.title || "Видео Bastyon";
+        const author = postData.address || "@author";
         const img = postData.image || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
         
         document.getElementById("videoTitle").textContent = title;
         document.getElementById("videoAuthor").textContent = "Автор: " + author;
         document.getElementById("videoThumb").src = img;
 
-        linksList.innerHTML = "";
-        
-        // Формируем ссылки на поток
-        const videoFileUrl = postData.video || postData.file || `https://pocketnet.app/content/video/${videoId}.mp4`;
+        const videoUrl = `https://pocketnet.app/content/video/${videoId}.mp4`;
         
         const a = document.createElement("a");
-        a.href = videoFileUrl;
+        a.href = videoUrl;
         a.className = "download-btn";
         a.target = "_blank";
-        a.innerHTML = `📥 Скачать видео (MP4)`;
+        a.innerHTML = `📥 Скачать MP4`;
         linksList.appendChild(a);
-
     } else {
-        // Резервный режим для демонстрации по вашему ID
-        document.getElementById("videoTitle").textContent = "Видео ID: " + videoId.substring(0, 16) + "...";
-        document.getElementById("videoAuthor").textContent = "Автор: Сеть Bastyon";
+        // Прямой доступ к потоку видео по ID
+        document.getElementById("videoTitle").textContent = "Видео Bastyon (" + videoId.substring(0, 10) + "...)";
+        document.getElementById("videoAuthor").textContent = "Прямой поток из сети";
         document.getElementById("videoThumb").src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
 
-        linksList.innerHTML = "";
-        
+        const directVideoUrl = `https://pocketnet.app/content/video/${videoId}.mp4`;
+
         const a = document.createElement("a");
-        a.href = `https://pocketnet.app/content/video/${videoId}.mp4`;
+        a.href = directVideoUrl;
         a.className = "download-btn";
         a.target = "_blank";
-        a.innerHTML = `📥 Скачать видео MP4`;
+        a.innerHTML = `📥 Скачать файл .MP4`;
         linksList.appendChild(a);
 
-        const altA = document.createElement("a");
-        altA.href = rawUrl;
-        altA.className = "download-btn";
-        altA.target = "_blank";
-        altA.innerHTML = `🌐 Открыть в Bastyon`;
-        linksList.appendChild(altA);
+        const aWeb = document.createElement("a");
+        aWeb.href = `https://bastyon.com/index?v=${videoId}`;
+        aWeb.className = "download-btn";
+        aWeb.target = "_blank";
+        aWeb.innerHTML = `🌐 Открыть на Bastyon`;
+        linksList.appendChild(aWeb);
     }
 }
 
