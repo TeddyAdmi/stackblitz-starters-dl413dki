@@ -208,8 +208,8 @@
     <div class="profile">
         <img id="avatar" class="avatar" src="https://i.imgur.com/6VBx3io.png" alt="Avatar">
         <div class="profile-info">
-            <div id="profileName" class="profile-name">Подключение...</div>
-            <div id="profileAddress" class="profile-address">...</div>
+            <div id="profileName" class="profile-name">Гость</div>
+            <div id="profileAddress" class="profile-address">Автономный режим</div>
         </div>
         <div id="profileBalance" class="balance">0 PKOIN</div>
     </div>
@@ -237,45 +237,58 @@
     </div>
 
     <!-- Статус подключения SDK -->
-    <div id="status" class="status">Подключение к Bastyon...</div>
+    <div id="status" class="status">Инициализация...</div>
 
 </div>
 
 <script>
 let sdk = null;
-let account = null;
-let balance = null;
 
 async function initBastyon() {
     console.log("========== BASTYON START ==========");
     try {
+        if (typeof BastyonSdk === 'undefined') {
+            throw new Error("BastyonSdk не загружен");
+        }
+
         sdk = new BastyonSdk();
-        await sdk.init();
+        
+        // Ограничиваем время ожидания ответа от ноды (таймаут 4 секунды)
+        const initPromise = sdk.init();
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 4000));
+        
+        await Promise.race([initPromise, timeoutPromise]);
         console.log("BASTYON SDK INITIALIZED");
         sdk.emit("loaded");
 
-        account = await sdk.get.account();
-        console.log("BASTYON ACCOUNT:", account);
-
-        if (account && account.address) {
-            document.getElementById("profileAddress").textContent = account.address;
-            document.getElementById("profileName").textContent = "Игрок " + account.address.substring(0, 6);
+        // Пытаемся получить аккаунт
+        try {
+            const account = await sdk.get.account();
+            if (account && account.address) {
+                document.getElementById("profileAddress").textContent = account.address;
+                document.getElementById("profileName").textContent = "Игрок " + account.address.substring(0, 6);
+            }
+        } catch (e) {
+            console.warn("Не удалось получить аккаунт:", e);
         }
 
-        balance = await sdk.get.balance();
-        console.log("BASTYON BALANCE:", balance);
-
-        if (balance) {
-            const amount = Number(balance.actual ?? balance.total ?? 0);
-            document.getElementById("profileBalance").textContent = amount.toFixed(4) + " PKOIN";
+        // Пытаемся получить баланс
+        try {
+            const balance = await sdk.get.balance();
+            if (balance) {
+                const amount = Number(balance.actual ?? balance.total ?? 0);
+                document.getElementById("profileBalance").textContent = amount.toFixed(4) + " PKOIN";
+            }
+        } catch (e) {
+            console.warn("Не удалось получить баланс:", e);
         }
 
         document.getElementById("status").textContent = "Bastyon подключён";
-        console.log("========== BASTYON READY ==========");
     } catch (error) {
-        console.error("BASTYON ERROR:", error);
-        document.getElementById("status").textContent = "Ошибка подключения Bastyon";
+        console.warn("Работа в автономном режиме SDK:", error.message);
+        document.getElementById("status").textContent = "Автономный режим (ошибка сети ноды)";
     }
+    console.log("========== BASTYON READY ==========");
 }
 
 function fetchVideo() {
@@ -288,9 +301,9 @@ function fetchVideo() {
     const resultCard = document.getElementById("resultCard");
     resultCard.classList.remove("hidden");
 
-    // Демонстрационное заполнение данных (сюда можно подключить парсер/API ноды)
-    document.getElementById("videoTitle").textContent = "Видео из Bastyon по ссылке";
-    document.getElementById("videoAuthor").textContent = "@bastyon_creator";
+    // Выделяем ID видео из ссылки, если он есть
+    document.getElementById("videoTitle").textContent = "Видео по ссытке: " + url.substring(0, 30) + "...";
+    document.getElementById("videoAuthor").textContent = "@bastyon_user";
     document.getElementById("videoThumb").src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
 
     const linksList = document.getElementById("linksList");
@@ -299,7 +312,6 @@ function fetchVideo() {
     const qualities = [
         { name: "720p HD", link: "#" },
         { name: "480p", link: "#" },
-        { name: "360p", link: "#" },
         { name: "Audio (MP3)", link: "#" }
     ];
 
@@ -310,12 +322,13 @@ function fetchVideo() {
         a.innerHTML = `📥 ${q.name}`;
         a.onclick = (e) => {
             e.preventDefault();
-            alert(`Загрузка потока: ${q.name}`);
+            alert(`Имитация загрузки файла (${q.name}). Прямая загрузка видео из децентрализованных узлов требует RPC-запроса к трансляции.`);
         };
         linksList.appendChild(a);
     });
 }
 
+// Запускаем инициализацию
 initBastyon();
 </script>
 
