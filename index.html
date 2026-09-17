@@ -8,10 +8,7 @@
     <script src="https://bastyon.com/js/lib/apps/sdk.js"></script>
 
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
         body {
             margin: 0;
             min-height: 100vh;
@@ -22,79 +19,10 @@
             justify-content: center;
             align-items: center;
         }
-
-        .app {
-            width: 100%;
-            max-width: 480px;
-            padding: 20px;
-        }
-
-        .profile {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            background: #1f2937;
-            padding: 15px;
-            border-radius: 18px;
-            margin-bottom: 20px;
-        }
-
-        .avatar {
-            width: 58px;
-            height: 58px;
-            border-radius: 50%;
-            object-fit: cover;
-            background: #374151;
-        }
-
-        .profile-info {
-            min-width: 0;
-            flex: 1;
-        }
-
-        .profile-name {
-            font-size: 18px;
-            font-weight: bold;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .profile-address {
-            margin-top: 4px;
-            font-size: 12px;
-            color: #9ca3af;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .balance {
-            margin-left: auto;
-            font-size: 14px;
-            white-space: nowrap;
-        }
-
-        .title {
-            text-align: center;
-            font-size: 26px;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #9ca3af;
-            margin-bottom: 25px;
-            font-size: 14px;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
+        .app { width: 100%; max-width: 480px; padding: 20px; }
+        .title { text-align: center; font-size: 26px; font-weight: bold; margin-bottom: 8px; }
+        .subtitle { text-align: center; color: #9ca3af; margin-bottom: 25px; font-size: 14px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
         input[type="text"] {
             flex: 1;
             background: #1f2937;
@@ -104,12 +32,7 @@
             color: white;
             font-size: 15px;
         }
-
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #f97316;
-        }
-
+        input[type="text"]:focus { outline: none; border-color: #f97316; }
         .btn {
             border: 0;
             border-radius: 14px;
@@ -119,131 +42,51 @@
             cursor: pointer;
             font-size: 15px;
             font-weight: bold;
-            transition: background 0.2s;
         }
-
-        .btn:hover {
-            background: #ea580c;
-        }
-
-        .result {
-            margin-top: 20px;
-            padding: 18px;
-            border-radius: 18px;
-            background: #1f2937;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .video-info {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-            align-items: center;
-        }
-
-        .video-thumb {
-            width: 110px;
-            height: 62px;
-            object-fit: cover;
-            border-radius: 8px;
-            background: #374151;
-        }
-
+        .btn:hover { background: #ea580c; }
+        .result { margin-top: 20px; padding: 18px; border-radius: 18px; background: #1f2937; }
+        .video-info { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; }
+        .video-thumb { width: 110px; height: 62px; object-fit: cover; border-radius: 8px; background: #374151; }
         .video-details h3 {
-            font-size: 14px;
-            margin: 0 0 6px 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
+            font-size: 14px; margin: 0 0 6px 0;
+            overflow: hidden; text-overflow: ellipsis;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
         }
-
-        .video-details p {
-            font-size: 12px;
-            color: #9ca3af;
-            margin: 0;
-        }
-
-        .download-options {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
+        .video-details p { font-size: 12px; color: #9ca3af; margin: 0; }
         .download-btn {
-            background: #3b82f6;
-            color: white;
-            text-decoration: none;
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 500;
-            text-align: center;
-            display: block;
+            background: #3b82f6; color: white; text-decoration: none;
+            padding: 10px 14px; border-radius: 10px; font-size: 14px;
+            font-weight: 500; text-align: center; display: block;
         }
-
-        .download-btn.alt {
-            background: #4b5563;
-        }
-
-        .download-btn:hover {
-            opacity: 0.9;
-        }
-
-        .status {
-            margin-top: 20px;
-            text-align: center;
-            color: #6ee7b7;
-            font-size: 13px;
-        }
+        .download-btn:hover { opacity: 0.9; }
+        .status { margin-top: 20px; text-align: center; color: #6ee7b7; font-size: 13px; }
     </style>
 </head>
 <body>
 
 <div class="app">
-
-    <!-- Профиль пользователя -->
-    <div class="profile">
-        <img id="avatar" class="avatar" src="https://i.imgur.com/6VBx3io.png" alt="Avatar">
-        <div class="profile-info">
-            <div id="profileName" class="profile-name">Гость</div>
-            <div id="profileAddress" class="profile-address">Автономный режим</div>
-        </div>
-        <div id="profileBalance" class="balance">0 PKOIN</div>
-    </div>
-
     <div class="title">Bastyon DL</div>
     <div class="subtitle">Скачивание видео из сети</div>
 
-    <!-- Поле ввода ссылки -->
     <div class="input-group">
-        <input type="text" id="urlInput" value="https://bastyon.com/index?video=1&v=7f82bd3abe4702637528e7c8ecc9a10c8f4d6f863aec6a063026714072361750" placeholder="Вставьте ссылку на видео...">
+        <input type="text" id="urlInput" value="7f82bd3abe4702637528e7c8ecc9a10c8f4d6f863aec6a063026714072361750" placeholder="ID или ссылка на видео...">
         <button class="btn" onclick="fetchVideo()">Найти</button>
     </div>
 
-    <!-- Блок результата -->
     <div id="resultCard" class="result">
         <div class="video-info">
             <img id="videoThumb" class="video-thumb" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80" alt="Thumbnail">
             <div class="video-details">
-                <h3 id="videoTitle">Загрузка данных...</h3>
-                <p id="videoAuthor">Автор: определяется...</p>
+                <h3 id="videoTitle">Введите ID видео</h3>
+                <p id="videoAuthor">Автор: —</p>
             </div>
         </div>
-        <div style="font-size: 13px; color: #9ca3af; margin-bottom: 4px;">Варианты действий:</div>
-        <div id="linksList" class="download-options">
-            <a id="actionLink" href="#" target="_blank" class="download-btn">📥 Открыть плеер и скачать</a>
+        <div id="linksList">
+            <a id="actionLink" href="#" target="_blank" class="download-btn">📥 Открыть плеер</a>
         </div>
     </div>
 
-    <!-- Статус подключения SDK -->
-    <div id="status" class="status">Инициализация...</div>
-
+    <div id="status" class="status">Инициализация SDK...</div>
 </div>
 
 <script>
@@ -253,23 +96,8 @@ async function initBastyon() {
     try {
         if (typeof BastyonSdk !== 'undefined') {
             sdk = new BastyonSdk();
-            await Promise.race([
-                sdk.init(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
-            ]);
+            await sdk.init();
             sdk.emit("loaded");
-
-            const account = await sdk.get.account().catch(() => null);
-            if (account && account.address) {
-                document.getElementById("profileAddress").textContent = account.address;
-                document.getElementById("profileName").textContent = "Игрок " + account.address.substring(0, 6);
-            }
-
-            const balance = await sdk.get.balance().catch(() => null);
-            if (balance) {
-                const amount = Number(balance.actual ?? balance.total ?? 0);
-                document.getElementById("profileBalance").textContent = amount.toFixed(4) + " PKOIN";
-            }
             document.getElementById("status").textContent = "Bastyon подключён";
         }
     } catch (e) {
@@ -278,31 +106,27 @@ async function initBastyon() {
 }
 
 async function fetchVideo() {
-    const rawUrl = document.getElementById("urlInput").value.trim();
-    if (!rawUrl) {
-        alert("Введите ссылку на видео");
-        return;
-    }
+    const rawInput = document.getElementById("urlInput").value.trim();
+    if (!rawInput) return;
 
-    let videoId = "";
+    // Извлекаем ID видео из ссылки или берем строку целиком, если это хэш
+    let videoId = rawInput;
     try {
-        const urlObj = new URL(rawUrl.startsWith('http') ? rawUrl : 'https://bastyon.com/' + rawUrl);
-        videoId = urlObj.searchParams.get("v") || urlObj.searchParams.get("id") || urlObj.pathname.split("/").pop();
-    } catch (err) {
-        videoId = rawUrl; 
-    }
+        if (rawInput.includes('http')) {
+            const urlObj = new URL(rawInput);
+            videoId = urlObj.searchParams.get("v") || urlObj.searchParams.get("id") || urlObj.pathname.split("/").pop();
+        }
+    } catch (e) {}
 
-    // Установка базовых значений на случай долгого ответа сети
-    document.getElementById("videoTitle").textContent = "Ролик Bastyon (ID: " + videoId.substring(0, 10) + "...)";
-    document.getElementById("videoAuthor").textContent = "Автор: Загрузка...";
-    document.getElementById("videoThumb").src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
+    document.getElementById("videoTitle").textContent = "Загрузка данных с ноды...";
+    document.getElementById("videoAuthor").textContent = "Автор: поиск...";
 
     const actionLink = document.getElementById("actionLink");
     actionLink.href = `https://bastyon.com/index?video=1&v=${videoId}`;
 
-    // Запрос метаданных через ноду Pocketnet JSON-RPC
     try {
-        const response = await fetch('https://1.pocketnet.app', {
+        // Запрос к RPC-ноде Pocketnet для получения информации о посте/видео
+        const response = window.fetch ? await fetch('https://1.pocketnet.app', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -311,21 +135,34 @@ async function fetchVideo() {
                 method: 'getpost',
                 params: [videoId]
             })
-        });
-        const data = await response.json();
-        
-        if (data && data.result) {
-            const post = data.result;
-            const title = post.caption || post.title || "Видео Bastyon";
-            const author = post.address || "Пользователь Bastyon";
-            const thumb = post.image || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
+        }) : null;
 
-            document.getElementById("videoTitle").textContent = title;
-            document.getElementById("videoAuthor").textContent = "Автор: " + author;
-            document.getElementById("videoThumb").src = thumb;
+        if (response && response.ok) {
+            const data = await response.json();
+            const post = data.result;
+
+            if (post) {
+                // Извлекаем название, автора и превью
+                const title = post.caption || post.title || "Видео без названия";
+                const author = post.address || "Неизвестный автор";
+                let thumb = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80";
+                
+                if (post.settings && post.settings.v && post.settings.v.image) {
+                    thumb = post.settings.v.image;
+                } else if (post.image) {
+                    thumb = post.image;
+                }
+
+                document.getElementById("videoTitle").textContent = title;
+                document.getElementById("videoAuthor").textContent = "Автор: " + author;
+                document.getElementById("videoThumb").src = thumb;
+                return;
+            }
         }
-    } catch (e) {
-        console.warn("Не удалось подтянуть метаданные по API, используется базовый режим", e);
+        throw new Error("Пустой ответ ноды");
+    } catch (err) {
+        console.warn("Ошибка запроса метаданных:", err);
+        document.getElementById("videoTitle").textContent = "Видео ID: " + videoId.substring(0, 12) + "...";
         document.getElementById("videoAuthor").textContent = "Автор: Сеть Bastyon";
     }
 }
